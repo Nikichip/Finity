@@ -50,10 +50,9 @@ if os.path.exists(frontend_path):
         return FileResponse(os.path.join(frontend_path, "index.html"))
 
 # ── Health check ───────────────────────────────────────────────────────
-@app.get("/api/health", tags=["Health"])
+@app.api_route("/api/health", methods=["GET", "HEAD"], tags=["Health"])
 def health():
     return {"status": "ok", "service": "Finity Finance API"}
-
 # ── Startup ────────────────────────────────────────────────────────────
 @app.on_event("startup")
 def startup():

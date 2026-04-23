@@ -318,6 +318,9 @@ a { color: inherit; text-decoration: none; }
       <div class="field"><label>Password</label><input type="password" id="s-pass" placeholder="Min 6 characters" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignup()"></div>
       <button class="btn-primary" id="signup-btn" onclick="doSignup()">Create account</button>
     </div>
+    <div id="wake-notice" style="display:none;font-size:0.78rem;color:var(--amber);background:var(--amber-dim);padding:0.5rem 0.75rem;border-radius:6px;margin-bottom:0.5rem;text-align:center;">
+  ⏳ Server is waking up (~30s). Login will work shortly...
+</div>
     <div class="auth-msg" id="auth-msg"></div>
  
     <!-- FORGOT PASSWORD FLOW -->
@@ -663,8 +666,15 @@ async function doLogin() {
     const data = await api('POST', '/auth/login', { email, password: pass });
     startSession(data.token, data.user);
   } catch (e) {
-    setMsg(typeof e === 'object' ? (e.message || 'Something went wrong') : e, 'error');
+  // Show wake-up notice if it looks like a connection issue
+  if (e.message?.includes('fetch') || e.message?.includes('network') || e.message?.includes('Failed')) {
+    document.getElementById('wake-notice').style.display = 'block';
+    setMsg('Server is starting up, please try again in 30 seconds', 'error');
+  } else {
+    setMsg(e.message || 'Something went wrong', 'error');
   }
+  btn.disabled = false; btn.textContent = 'Sign in';
+}
 }
  
 async function doSignup() {
@@ -1322,14 +1332,27 @@ window.addEventListener('DOMContentLoaded', async () => {
     showLogin();
   }
 });
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log('SW registered'))
-        .catch(e => console.log('SW failed', e));
-    });
-  }
+  (function init() {
+  fetch(API_URL + '/api/health').catch(() => {});
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    const savedToken = localStorage.getItem('finity_token');
+    const savedUser  = localStorage.getItem('finity_user');
+    if (savedToken && savedUser) {
+      try {
+        token = savedToken;
+        user  = JSON.parse(savedUser);
+        showApp();
+      } catch(e) {
+        localStorage.removeItem('finity_token');
+        localStorage.removeItem('finity_user');
+        document.getElementById('auth-screen').style.display = 'flex';
+      }
+    } else {
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  }, 800);
+})();
 </script>
 </body>
 </html>

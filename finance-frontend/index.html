@@ -1290,14 +1290,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const savedToken = localStorage.getItem('finity_token');
   const savedUser = localStorage.getItem('finity_user');
 
-  // Always hide loading after 3 seconds maximum
-  setTimeout(() => {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('auth-screen').style.display = 'flex';
-  }, 3000);
+  const hide = () => document.getElementById('loading').style.display = 'none';
+  const showLogin = () => document.getElementById('auth-screen').style.display = 'flex';
+
+  // Hard fallback — never stuck loading more than 3 seconds
+  setTimeout(() => { hide(); showLogin(); }, 3000);
 
   await new Promise(r => setTimeout(r, 400));
-  document.getElementById('loading').style.display = 'none';
+  hide();
 
   if (savedToken && savedUser) {
     try {
@@ -1315,11 +1315,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         token = null; user = null;
         localStorage.removeItem('finity_token');
         localStorage.removeItem('finity_user');
-        document.getElementById('auth-screen').style.display = 'flex';
+        showLogin();
       }
     }
   } else {
-    document.getElementById('auth-screen').style.display = 'flex';
+    showLogin();
   }
 });
 <script>

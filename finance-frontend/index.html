@@ -570,7 +570,13 @@ a { color: inherit; text-decoration: none; }
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────
 const API_URL = window.API_URL || 'https://finity-1045.onrender.com';
- 
+// Keep backend alive — ping every 10 minutes
+setInterval(() => {
+  fetch(API_URL + '/api/health').catch(() => {});
+}, 10 * 60 * 1000);
+
+// Wake it up immediately on page load too
+fetch(API_URL + '/api/health').catch(() => {});
 // ─────────────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────
@@ -1283,19 +1289,34 @@ function hexRgb(hex) {
 window.addEventListener('DOMContentLoaded', async () => {
   const savedToken = localStorage.getItem('finity_token');
   const savedUser = localStorage.getItem('finity_user');
+
+  // Always hide loading after 3 seconds maximum
+  setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+  }, 3000);
+
   await new Promise(r => setTimeout(r, 400));
   document.getElementById('loading').style.display = 'none';
+
   if (savedToken && savedUser) {
     try {
       token = savedToken;
       user = JSON.parse(savedUser);
-      await api('GET', '/health');
+      await Promise.race([
+        api('GET', '/health'),
+        new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 4000))
+      ]);
       showApp();
     } catch(e) {
-      token = null; user = null;
-      localStorage.removeItem('finity_token');
-      localStorage.removeItem('finity_user');
-      document.getElementById('auth-screen').style.display = 'flex';
+      if (token && user) {
+        showApp();
+      } else {
+        token = null; user = null;
+        localStorage.removeItem('finity_token');
+        localStorage.removeItem('finity_user');
+        document.getElementById('auth-screen').style.display = 'flex';
+      }
     }
   } else {
     document.getElementById('auth-screen').style.display = 'flex';

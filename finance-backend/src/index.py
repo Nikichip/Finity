@@ -58,3 +58,4 @@ def health():
 def startup():
     init_db()
     print("Finity API started successfully.")
+
